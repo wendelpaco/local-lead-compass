@@ -17,6 +17,8 @@ import {
   BULK_SELECTION_LIMIT,
   type SortValue,
 } from "@/lib/constants";
+import { isDemoMode } from "@/lib/env";
+import { seedDemoLeads } from "@/repositories";
 
 // SSR-safe storage: returns a no-op storage when window/localStorage is unavailable
 function safeStorage() {
@@ -169,7 +171,15 @@ export const useLeadsStore = create<LeadsState>()(
       kanbanOrder: {},
       setSearching: (searching) => set({ searching }),
       setSearchError: (searchError) => set({ searchError }),
-      setLeads: (leads, search) =>
+      setLeads: (leads, search) => {
+        // Sync with demo repository so TanStack Query hooks see the same data
+        if (isDemoMode) {
+          try {
+            seedDemoLeads(leads);
+          } catch {
+            // best-effort sync; query hooks fall back to empty
+          }
+        }
         set((s) => ({
           leads,
           loaded: true,
@@ -180,7 +190,8 @@ export const useLeadsStore = create<LeadsState>()(
           selectedIds: [],
           focusedId: null,
           kanbanOrder: {},
-        })),
+        }));
+      },
       reset: () =>
         set({
           leads: [],

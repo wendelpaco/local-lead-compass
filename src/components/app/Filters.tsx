@@ -1,4 +1,5 @@
 import { useLeadsStore } from "@/stores";
+import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -113,8 +114,12 @@ function toggleInList<T>(list: T[] | undefined, item: T): T[] | undefined {
 }
 
 export function AdvancedFilters() {
-  const leads = useLeadsStore((s) => s.leads);
   const filters = useLeadsStore((s) => s.filters);
+  const sort = useLeadsStore((s) => s.sort);
+
+  // CRM real — leads from TanStack Query (Phase 3)
+  const { data } = useLeadsList(filters, sort);
+  const leads = data?.items ?? [];
   const replaceFilters = useLeadsStore((s) => s.replaceFilters);
   const clearFilters = useLeadsStore((s) => s.clearFilters);
   const savedFilters = useLeadsStore((s) => s.savedFilters);

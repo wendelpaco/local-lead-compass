@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2, MapPin, X } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { NICHES, RADIUS_OPTIONS, SEARCH_STEPS, CITY_SUGGESTIONS } from "@/lib/constants";
-import { searchService, historyService, type SearchInput } from "@/services";
+import { NICHES, RADIUS_OPTIONS, CITY_SUGGESTIONS } from "@/lib/constants";
+import { historyService, type SearchInput } from "@/services";
 import { useLeadsStore, useSettingsStore } from "@/stores";
+import { useSearchMutation } from "@/hooks/useSearchMutation";
 import { toast } from "sonner";
-import type { PresenceFilter, SearchProgress } from "@/types";
+import type { PresenceFilter } from "@/types";
+import { isRealMode } from "@/lib/env";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
@@ -44,29 +45,29 @@ export function SearchForm() {
   const [presence, setPresence] = useState<PresenceFilter>(defaultPresence);
   const [nicheOpen, setNicheOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
-  const [progress, setProgress] = useState<SearchProgress | null>(null);
-  const cancelRef = useRef(false);
   const nicheButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const suggestions = historyService.suggestLocation(location);
 
-  const mutation = useMutation({
-    mutationFn: (input: SearchInput) => searchService.run(input),
-    onSuccess: ({ leads, search }) => {
+  // Phase 4 — Real search: uses repository (demo keeps mock behavior)
+  const { run, cancel, loading, progress } = useSearchMutation({
+    onSuccess: (leads, search) => {
       setLeads(leads, search);
-      toast.success(`${leads.length} empresas encontradas`);
+      setSearching(false);
+      toast.success(
+        isRealMode
+          ? `${search.totalFound} empresas encontradas`
+          : `${leads.length} empresas encontradas`,
+      );
     },
-    onError: (e) => {
-      const msg = e instanceof Error ? e.message : "Falha na busca";
+    onError: (msg) => {
       setSearchError(msg);
       setSearching(false);
       toast.error(msg);
     },
   });
 
-  const loading = mutation.isPending || progress != null;
-
-  async function runSearch(input?: Partial<SearchInput>) {
+  function runSearch(input?: Partial<SearchInput>) {
     const payload: SearchInput = {
       niche: input?.niche ?? niche,
       location: input?.location ?? location,
@@ -75,28 +76,9 @@ export function SearchForm() {
       radiusKm: input?.radiusKm ?? radius,
       presence: input?.presence ?? presence,
     };
-    cancelRef.current = false;
     setSearching(true);
     setSearchError(null);
-    setProgress({ step: 0, stepLabel: SEARCH_STEPS[0], percent: 0, partialCount: 0 });
-    const total = SEARCH_STEPS.length;
-    for (let i = 0; i < total; i++) {
-      if (cancelRef.current) {
-        setProgress(null);
-        setSearching(false);
-        toast.info("Busca cancelada");
-        return;
-      }
-      setProgress({
-        step: i,
-        stepLabel: SEARCH_STEPS[i],
-        percent: Math.round(((i + 1) / total) * 100),
-        partialCount: Math.round(((i + 1) / total) * 30),
-      });
-      await new Promise((r) => setTimeout(r, 280 + Math.random() * 320));
-    }
-    setProgress(null);
-    mutation.mutate(payload);
+    run(payload);
   }
 
   // Busca inicial + eventos globais (home page, histórico, retry).
@@ -299,9 +281,7 @@ export function SearchForm() {
             <span className="font-medium">{progress.stepLabel}</span>
             <button
               aria-label="Cancelar busca"
-              onClick={() => {
-                cancelRef.current = true;
-              }}
+              onClick={() => cancel()}
               className="text-muted-foreground hover:text-destructive"
             >
               <X className="h-3.5 w-3.5" />

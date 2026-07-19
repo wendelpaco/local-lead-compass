@@ -1,4 +1,12 @@
 import { useLeadsStore } from "@/stores";
+import {
+  useLeadDetail,
+  useAddNoteMutation,
+  useRemoveNoteMutation,
+  useUpdateNoteMutation,
+  useToggleNotePinMutation,
+  useAddActivityMutation,
+} from "@/hooks/useLeadsQuery";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,12 +48,14 @@ import type { ActivityType } from "@/types";
 export function LeadDetailsDrawer() {
   const detailsId = useLeadsStore((s) => s.detailsId);
   const setDetails = useLeadsStore((s) => s.setDetails);
-  const lead = useLeadsStore((s) => s.leads.find((l) => l.id === detailsId));
-  const addNote = useLeadsStore((s) => s.addNote);
-  const removeNote = useLeadsStore((s) => s.removeNote);
-  const updateNote = useLeadsStore((s) => s.updateNote);
-  const toggleNotePin = useLeadsStore((s) => s.toggleNotePin);
-  const addActivity = useLeadsStore((s) => s.addActivity);
+
+  // CRM real — lead data from TanStack Query (Phase 3)
+  const { data: lead } = useLeadDetail(detailsId);
+  const addNoteMut = useAddNoteMutation();
+  const removeNoteMut = useRemoveNoteMutation();
+  const updateNoteMut = useUpdateNoteMutation();
+  const toggleNotePinMut = useToggleNotePinMutation();
+  const addActivityMut = useAddActivityMutation();
   const [noteText, setNoteText] = useState("");
   const [noteSearch, setNoteSearch] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -268,7 +278,7 @@ export function LeadDetailsDrawer() {
               <Button
                 onClick={() => {
                   if (!noteText.trim()) return;
-                  addNote(lead.id, { content: noteText.trim() });
+                  addNoteMut.mutate({ leadId: lead.id, input: { content: noteText.trim() } });
                   setNoteText("");
                   toast.success("Nota adicionada");
                 }}
@@ -315,7 +325,7 @@ export function LeadDetailsDrawer() {
                             className="h-7 text-xs"
                             onClick={() => {
                               if (editingText.trim()) {
-                                updateNote(lead.id, n.id, editingText.trim());
+                                updateNoteMut.mutate({ leadId: lead.id, noteId: n.id, content: editingText.trim() });
                                 toast.success("Nota atualizada");
                               }
                               setEditingNoteId(null);
@@ -346,7 +356,7 @@ export function LeadDetailsDrawer() {
                             <button
                               aria-label={n.pinned ? "Desafixar nota" : "Fixar nota"}
                               className="hover:text-foreground"
-                              onClick={() => toggleNotePin(lead.id, n.id)}
+                              onClick={() => toggleNotePinMut.mutate({ leadId: lead.id, noteId: n.id })}
                             >
                               {n.pinned ? (
                                 <PinOff className="h-3 w-3" />
@@ -368,7 +378,7 @@ export function LeadDetailsDrawer() {
                               aria-label="Excluir nota"
                               className="hover:text-destructive"
                               onClick={() => {
-                                removeNote(lead.id, n.id);
+                                removeNoteMut.mutate({ leadId: lead.id, noteId: n.id });
                                 toast.success("Nota excluída");
                               }}
                             >
@@ -468,14 +478,14 @@ export function LeadDetailsDrawer() {
                   size="sm"
                   onClick={() => {
                     if (!act.title.trim()) return toast.error("Informe um título");
-                    addActivity(lead.id, {
+                    addActivityMut.mutate({ leadId: lead.id, input: {
                       type: act.type,
                       title: act.title,
                       date: act.date,
                       time: act.time || undefined,
                       note: act.note || undefined,
                       priority: act.priority,
-                    });
+                    } });
                     setAct({ ...act, title: "", time: "", note: "" });
                     toast.success("Atividade criada");
                   }}

@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLeadsStore, useSettingsStore } from "@/stores";
+import { useMoveLeadMutation } from "@/hooks/useLeadsQuery";
 import type { Lead, LeadStage, LeadTemperature, LeadChannel } from "@/types";
 import { STAGE_ORDER, STAGE_LABELS, TEMPERATURE_LABELS } from "@/lib/constants";
 import { TemperatureBadge, ScoreBadge } from "@/components/shared/Badges";
@@ -82,7 +83,7 @@ function KanbanCard({
   const toggleSelect = useLeadsStore((s) => s.toggleSelect);
   const setPendingWin = useLeadsStore((s) => s.setPendingWin);
   const setPendingDiscard = useLeadsStore((s) => s.setPendingDiscard);
-  const setStage = useLeadsStore((s) => s.setStage);
+  const moveMutation = useMoveLeadMutation();
   const bulkLimit = useSettingsStore((s) => s.bulkLimit);
 
   const openWhats = (e: React.MouseEvent) => {
@@ -184,8 +185,10 @@ function KanbanCard({
                 <DropdownMenuItem
                   key={s}
                   onClick={() => {
-                    setStage(lead.id, s);
-                    toast.success(`Movido para ${STAGE_LABELS[s]}`);
+                    moveMutation.mutate(
+                      { id: lead.id, input: { toStage: s } },
+                      { onSuccess: () => toast.success(`Movido para ${STAGE_LABELS[s]}`) },
+                    );
                   }}
                 >
                   Mover para {STAGE_LABELS[s]}
@@ -222,7 +225,7 @@ function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   const collapsedColumns = useUIStore((s) => s.collapsedColumns);
   const toggleColumnCollapsed = useUIStore((s) => s.toggleColumnCollapsed);
-  const setStage = useLeadsStore((s) => s.setStage);
+  const moveMutation = useMoveLeadMutation();
   const collapsed = collapsedColumns.includes(stage);
   const total = leads.reduce(
     (s, l) => s + (l.stage === "won" ? (l.closedValue ?? 0) : (l.estimatedValue ?? 0)),
@@ -282,7 +285,9 @@ function KanbanColumn({
             {stage === "new" && leads.length > 0 && (
               <DropdownMenuItem
                 onClick={() => {
-                  leads.forEach((l) => setStage(l.id, "qualified"));
+                  leads.forEach((l) =>
+                    moveMutation.mutate({ id: l.id, input: { toStage: "qualified" } }),
+                  );
                   toast.success(`${leads.length} leads qualificados`);
                 }}
               >
@@ -292,7 +297,9 @@ function KanbanColumn({
             {stage === "qualified" && leads.length > 0 && (
               <DropdownMenuItem
                 onClick={() => {
-                  leads.forEach((l) => setStage(l.id, "contacted"));
+                  leads.forEach((l) =>
+                    moveMutation.mutate({ id: l.id, input: { toStage: "contacted" } }),
+                  );
                   toast.success(`${leads.length} leads marcados como contatados`);
                 }}
               >
@@ -333,7 +340,7 @@ export function KanbanBoard({
   leads: Lead[];
   density: "compact" | "comfortable";
 }) {
-  const setStage = useLeadsStore((s) => s.setStage);
+  const moveMutation = useMoveLeadMutation();
   const setPendingWin = useLeadsStore((s) => s.setPendingWin);
   const setPendingDiscard = useLeadsStore((s) => s.setPendingDiscard);
   const kanbanOrder = useLeadsStore((s) => s.kanbanOrder);
@@ -396,8 +403,10 @@ export function KanbanBoard({
       setPendingDiscard(lead.id);
       return;
     }
-    setStage(lead.id, targetStage);
-    toast.success(`Movido para ${STAGE_LABELS[targetStage]}`);
+    moveMutation.mutate(
+      { id: lead.id, input: { toStage: targetStage } },
+      { onSuccess: () => toast.success(`Movido para ${STAGE_LABELS[targetStage]}`) },
+    );
   };
 
   const activeLead = leads.find((l) => l.id === activeId);

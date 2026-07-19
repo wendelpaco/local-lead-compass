@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Lead } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +22,7 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { useLeadsStore, useSettingsStore } from "@/stores";
+import { useMoveLeadMutation, useRemoveLeadMutation } from "@/hooks/useLeadsQuery";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import {
@@ -36,22 +38,33 @@ interface Props {
   lead: Lead;
   bulk?: boolean;
   compact?: boolean;
+  isSelected?: boolean;
+  isFocused?: boolean;
 }
 
-export function LeadCard({ lead, bulk, compact }: Props) {
-  const focusedId = useLeadsStore((s) => s.focusedId);
-  const selectedIds = useLeadsStore((s) => s.selectedIds);
+export const LeadCard = memo(function LeadCard({
+  lead,
+  bulk,
+  compact,
+  isSelected: isSelectedProp,
+  isFocused: isFocusedProp,
+}: Props) {
   const setFocused = useLeadsStore((s) => s.setFocused);
   const setDetails = useLeadsStore((s) => s.setDetails);
   const toggleSelect = useLeadsStore((s) => s.toggleSelect);
-  const setStage = useLeadsStore((s) => s.setStage);
-  const removeLead = useLeadsStore((s) => s.removeLead);
   const setPendingWin = useLeadsStore((s) => s.setPendingWin);
   const setPendingDiscard = useLeadsStore((s) => s.setPendingDiscard);
   const bulkLimit = useSettingsStore((s) => s.bulkLimit);
+
+  // Fallback to store if props not provided (backward compat)
+  const storeSelectedIds = useLeadsStore((s) => (isSelectedProp == null ? s.selectedIds : null));
+  const storeFocusedId = useLeadsStore((s) => (isFocusedProp == null ? s.focusedId : null));
+  const isSelected = isSelectedProp ?? (storeSelectedIds?.includes(lead.id) ?? false);
+  const isFocused = isFocusedProp ?? (storeFocusedId === lead.id);
+
+  const moveMutation = useMoveLeadMutation();
+  const removeLeadMut = useRemoveLeadMutation();
   const navigate = useNavigate();
-  const isFocused = focusedId === lead.id;
-  const isSelected = selectedIds.includes(lead.id);
 
   const openWhats = () => {
     const num = digitsOnly(lead.whatsapp ?? lead.phone);
@@ -231,7 +244,7 @@ export function LeadCard({ lead, bulk, compact }: Props) {
                   aria-label="Adicionar ao funil"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setStage(lead.id, "qualified");
+                    moveMutation.mutate({ id: lead.id, input: { toStage: "qualified" } });
                     toast.success("Lead adicionado ao funil como Qualificado");
                   }}
                 >
@@ -253,7 +266,7 @@ export function LeadCard({ lead, bulk, compact }: Props) {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem
                       onClick={() => {
-                        setStage(lead.id, "new");
+                        moveMutation.mutate({ id: lead.id, input: { toStage: "new" } });
                         toast.success("Movido para Novo");
                       }}
                     >
@@ -261,7 +274,7 @@ export function LeadCard({ lead, bulk, compact }: Props) {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        setStage(lead.id, "qualified");
+                        moveMutation.mutate({ id: lead.id, input: { toStage: "qualified" } });
                         toast.success("Movido para Qualificado");
                       }}
                     >
@@ -269,7 +282,7 @@ export function LeadCard({ lead, bulk, compact }: Props) {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        setStage(lead.id, "contacted");
+                        moveMutation.mutate({ id: lead.id, input: { toStage: "contacted" } });
                         toast.success("Marcado como Contatado");
                       }}
                     >
@@ -334,7 +347,7 @@ export function LeadCard({ lead, bulk, compact }: Props) {
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
                       onClick={() => {
-                        removeLead(lead.id);
+                        removeLeadMut.mutate(lead.id);
                         toast.success("Lead removido da lista");
                       }}
                     >
@@ -349,4 +362,4 @@ export function LeadCard({ lead, bulk, compact }: Props) {
       </div>
     </Card>
   );
-}
+});

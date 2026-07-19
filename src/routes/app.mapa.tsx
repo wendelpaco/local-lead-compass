@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useMemo } from "react";
 import { useLeadsStore } from "@/stores";
+import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { applyFilters, sortLeads } from "@/lib/filters";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -94,23 +95,27 @@ function HomeState() {
 }
 
 function MapaPage() {
-  const leads = useLeadsStore((s) => s.leads);
   const filters = useLeadsStore((s) => s.filters);
   const sort = useLeadsStore((s) => s.sort);
   const loaded = useLeadsStore((s) => s.loaded);
   const searching = useLeadsStore((s) => s.searching);
   const searchError = useLeadsStore((s) => s.searchError);
   const setSearchError = useLeadsStore((s) => s.setSearchError);
+
+  // CRM real — leads now come from TanStack Query (Phase 3)
+  const { data, isLoading } = useLeadsList(filters, sort);
+  const allLeads = data?.items ?? [];
+
   const filtered = useMemo(
-    () => sortLeads(applyFilters(leads, filters), sort),
-    [leads, filters, sort],
+    () => sortLeads(applyFilters(allLeads, filters), sort),
+    [allLeads, filters, sort],
   );
 
-  if (searching && leads.length === 0) {
+  if (searching && allLeads.length === 0) {
     return <CenteredLoader label="Buscando empresas..." />;
   }
 
-  if (searchError && leads.length === 0) {
+  if (searchError && allLeads.length === 0) {
     return (
       <div className="grid h-full place-items-center">
         <ErrorState
@@ -123,7 +128,7 @@ function MapaPage() {
     );
   }
 
-  if (!loaded && leads.length === 0) {
+  if (!loaded && allLeads.length === 0) {
     return <HomeState />;
   }
 

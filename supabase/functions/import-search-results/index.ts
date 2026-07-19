@@ -1,0 +1,197 @@
+// import-search-results: turns selected search results into CRM leads.
+// Dedupe: provider_place_id → normalized phone → website domain.
+// Never overwrites commercial data on existing leads.
+import { z } from "npm:zod@3";
+import { AppError, handleOptions, json, logEvent, newRequestId } from "../_shared/http.ts";
+import { requireAuth } from "../_shared/auth.ts";
+import { writeAudit } from "../_shared/quota.ts";
+import { withIdempotency } from "../_shared/idempotency.ts";
+import {
+  hasRealWebsite,
+  normalizeBrazilianPhone,
+  normalizeCompanyName,
+  normalizeDomain,
+} from "../_shared/normalize.ts";
+import { calculateScore, temperatureFromScore, SCORE_RULE_VERSION } from "../_shared/score.ts";
+
+const InputSchema = z.object({
+  searchId: z.string().uuid(),
+  // Empty array + importAll=true imports every allowed result.
+  placeIds: z.array(z.string().uuid()).max(200).default([]),
+  importAll: z.boolean().default(false),
+});
+
+Deno.serve(async (req) => {
+  const opts = handleOptions(req);
+  if (opts) return opts;
+  const requestId = newRequestId();
+
+  try {
+    const ctx = await requireAuth(req);
+    const parsed = InputSchema.safeParse(await req.json());
+    if (!parsed.success) throw new AppError("VALIDATION_ERROR", "Entrada inválida.");
+    const input = parsed.data;
+    const idempotencyKey = req.headers.get("x-idempotency-key");
+
+    const result = await withIdempotency(
+      ctx.adminClient,
+      ctx.organizationId,
+      idempotencyKey,
+      "import-search-results",
+      async () => {
+        const { data: search } = await ctx.userClient
+          .from("searches")
+          .select("id, organization_id, center")
+          .eq("id", input.searchId)
+          .maybeSingle();
+        if (!search) throw new AppError("SEARCH_NOT_FOUND", "Busca não encontrada.");
+
+        let query = ctx.adminClient
+          .from("search_results")
+          .select("place_id, distance_meters, imported_lead_id, places(*)")
+          .eq("search_id", input.searchId)
+          .is("imported_lead_id", null);
+        if (!input.importAll && input.placeIds.length > 0) {
+          query = query.in("place_id", input.placeIds);
+        }
+        const { data: results } = await query.limit(200);
+
+        let imported = 0;
+        let duplicates = 0;
+
+        for (const row of results ?? []) {
+          const place = row.places as Record<string, unknown> | null;
+          if (!place) continue;
+
+          const phoneRaw = (place.national_phone_number ?? place.international_phone_number) as
+            | string
+            | null;
+          const phone = phoneRaw ? normalizeBrazilianPhone(phoneRaw) : null;
+          const domain = normalizeDomain(place.website_uri as string | null);
+
+          // Dedupe chain
+          let existing: { id: string } | null = null;
+          const { data: byPlace } = await ctx.adminClient
+            .from("leads")
+            .select("id")
+            .eq("organization_id", ctx.organizationId)
+            .eq("place_id", row.place_id)
+            .maybeSingle();
+          existing = byPlace;
+          if (!existing && phone?.e164) {
+            const { data } = await ctx.adminClient
+              .from("leads")
+              .select("id")
+              .eq("organization_id", ctx.organizationId)
+              .eq("phone_e164", phone.e164)
+              .maybeSingle();
+            existing = data;
+          }
+          if (!existing && domain) {
+            const { data } = await ctx.adminClient
+              .from("leads")
+              .select("id")
+              .eq("organization_id", ctx.organizationId)
+              .eq("website_domain", domain)
+              .maybeSingle();
+            existing = data;
+          }
+
+          if (existing) {
+            duplicates++;
+            // Record extra origin only; never touch commercial fields.
+            await ctx.adminClient
+              .from("search_results")
+              .update({ imported_lead_id: existing.id })
+              .eq("search_id", input.searchId)
+              .eq("place_id", row.place_id);
+            continue;
+          }
+
+          const websiteReal = hasRealWebsite(place.website_uri as string | null);
+          const coords = (place.location as { coordinates?: [number, number] } | null)
+            ?.coordinates;
+          const breakdown = calculateScore({
+            hasWebsite: websiteReal,
+            hasValidPhone: phone?.isValid ?? false,
+            whatsappStatus: phone?.type === "mobile" ? "possible" : "unknown",
+            hasEmail: false,
+            hasInstagram: false,
+            rating: (place.rating as number | null) ?? null,
+            reviewCount: (place.user_rating_count as number | null) ?? null,
+            distanceMeters: row.distance_meters,
+            businessStatus: (place.business_status as string | null) ?? null,
+          });
+
+          const { data: lead, error } = await ctx.adminClient
+            .from("leads")
+            .insert({
+              organization_id: ctx.organizationId,
+              place_id: row.place_id,
+              created_by: ctx.userId,
+              company_name: place.name,
+              category: place.primary_type ?? null,
+              address: place.formatted_address ?? null,
+              latitude: coords?.[1] ?? null,
+              longitude: coords?.[0] ?? null,
+              phone: phoneRaw,
+              phone_e164: phone?.e164 ?? null,
+              whatsapp: phone?.type === "mobile" ? phone.e164 : null,
+              whatsapp_status: phone?.type === "mobile" ? "possible" : "unknown",
+              website: place.website_uri ?? null,
+              website_domain: domain,
+              has_website: websiteReal,
+              rating: place.rating ?? null,
+              review_count: place.user_rating_count ?? null,
+              score: breakdown.total,
+              score_breakdown: breakdown,
+              score_rule_version: SCORE_RULE_VERSION,
+              temperature: temperatureFromScore(breakdown.total),
+              stage: "new",
+              source: "search",
+              source_search_id: input.searchId,
+              name_normalized: normalizeCompanyName(place.name as string),
+            })
+            .select("id")
+            .single();
+          if (error || !lead) continue;
+
+          imported++;
+          await ctx.adminClient
+            .from("search_results")
+            .update({ imported_lead_id: lead.id })
+            .eq("search_id", input.searchId)
+            .eq("place_id", row.place_id);
+          await writeAudit(ctx.adminClient, {
+            organizationId: ctx.organizationId,
+            actorUserId: ctx.userId,
+            action: "lead.imported",
+            entityType: "lead",
+            entityId: lead.id,
+            metadata: { searchId: input.searchId },
+          });
+        }
+
+        await ctx.adminClient.rpc("get_quota_status", { p_organization_id: ctx.organizationId });
+        const { count: totalImported } = await ctx.adminClient
+          .from("search_results")
+          .select("id", { count: "exact", head: true })
+          .eq("search_id", input.searchId)
+          .not("imported_lead_id", "is", null);
+        await ctx.adminClient
+          .from("searches")
+          .update({ imported_count: totalImported ?? imported })
+          .eq("id", input.searchId);
+
+        return { imported, duplicates };
+      },
+    );
+
+    logEvent({ requestId, operation: "import-search-results", status: "ok", ...result });
+    return json(result);
+  } catch (err) {
+    if (err instanceof AppError) return err.toResponse(requestId);
+    logEvent({ requestId, operation: "import-search-results", status: "error" });
+    return new AppError("INTERNAL_ERROR", "Erro interno.").toResponse(requestId);
+  }
+});

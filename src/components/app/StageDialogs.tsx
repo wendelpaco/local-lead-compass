@@ -22,7 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLeadsStore, useSettingsStore } from "@/stores";
-import { leadService } from "@/services";
+import { useLeadDetail } from "@/hooks/useLeadsQuery";
+import { getLeadRepository } from "@/repositories";
+import type { MoveLeadInput } from "@/repositories/types";
 import { DISCARD_REASONS } from "@/lib/constants";
 import type { Lead, LeadStage } from "@/types";
 import { toast } from "sonner";
@@ -39,7 +41,6 @@ const wonSchema = z.object({
 type WonForm = z.infer<typeof wonSchema>;
 
 function useStageMutation(onDone: () => void) {
-  const setStage = useLeadsStore((s) => s.setStage);
   return useMutation({
     mutationFn: async ({
       lead,
@@ -50,11 +51,16 @@ function useStageMutation(onDone: () => void) {
       stage: LeadStage;
       extra?: Partial<Lead>;
     }) => {
-      await leadService.updateStage(lead, stage, extra);
-      return { lead, stage, extra };
+      const input: MoveLeadInput = {
+        toStage: stage,
+        closedValue: extra?.closedValue,
+        closedService: extra?.closedService,
+        closedAt: extra?.closedAt,
+        discardReason: extra?.discardReason,
+      };
+      return getLeadRepository().moveStage(lead.id, input);
     },
-    onSuccess: ({ lead, stage, extra }) => {
-      setStage(lead.id, stage, extra);
+    onSuccess: () => {
       onDone();
     },
     onError: (e) => {
@@ -68,7 +74,7 @@ function useStageMutation(onDone: () => void) {
 export function WonDialog() {
   const pendingWinId = useLeadsStore((s) => s.pendingWinId);
   const setPendingWin = useLeadsStore((s) => s.setPendingWin);
-  const lead = useLeadsStore((s) => s.leads.find((l) => l.id === s.pendingWinId));
+  const { data: lead } = useLeadDetail(pendingWinId);
   const userName = useSettingsStore((s) => s.userName);
 
   const {
@@ -183,7 +189,7 @@ export function WonDialog() {
 export function DiscardDialog() {
   const pendingDiscardId = useLeadsStore((s) => s.pendingDiscardId);
   const setPendingDiscard = useLeadsStore((s) => s.setPendingDiscard);
-  const lead = useLeadsStore((s) => s.leads.find((l) => l.id === s.pendingDiscardId));
+  const { data: lead } = useLeadDetail(pendingDiscardId);
   const [reason, setReason] = useState<string>(DISCARD_REASONS[0]);
   const [note, setNote] = useState("");
 

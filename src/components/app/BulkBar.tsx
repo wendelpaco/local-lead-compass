@@ -1,4 +1,5 @@
 import { useLeadsStore, useMessageStore, useSettingsStore } from "@/stores";
+import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,7 +99,8 @@ export function BulkMessageDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const selected = useLeadsStore((s) => s.selectedIds);
-  const allLeads = useLeadsStore((s) => s.leads);
+  const { data } = useLeadsList({ quick: [] });
+  const allLeads = data?.items ?? [];
   const leads = useMemo(() => allLeads.filter((l) => selected.includes(l.id)), [allLeads, selected]);
   const template = useMessageStore((s) => s.template);
   const senderName = useSettingsStore((s) => s.senderName);

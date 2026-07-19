@@ -6,6 +6,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.markercluster";
 import type { Lead } from "@/types";
 import { useLeadsStore } from "@/stores";
+import { useMoveLeadMutation } from "@/hooks/useLeadsQuery";
 import { Button } from "@/components/ui/button";
 import { Crosshair, ZoomIn, Circle as CircleIcon, Moon, Loader2 } from "lucide-react";
 import { TEMPERATURE_LABELS } from "@/lib/constants";
@@ -70,8 +71,8 @@ export function MapView({ leads }: { leads: Lead[] }) {
   const focusedId = useLeadsStore((s) => s.focusedId);
   const setFocused = useLeadsStore((s) => s.setFocused);
   const setDetails = useLeadsStore((s) => s.setDetails);
-  const setStage = useLeadsStore((s) => s.setStage);
   const searching = useLeadsStore((s) => s.searching);
+  const moveMutation = useMoveLeadMutation();
   const [showCircle, setShowCircle] = useState(true);
   const [mapDark, setMapDark] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -181,7 +182,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
                 else toast.error("Sem WhatsApp/telefone");
               }
               if (action === "funnel") {
-                setStage(id, "qualified");
+                moveMutation.mutate({ id, input: { toStage: "qualified" } });
                 toast.success("Lead adicionado ao funil como Qualificado");
               }
             };
@@ -192,7 +193,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
       markersRef.current.set(l.id, m);
     });
     setVisibleCount(leads.length);
-  }, [leads, focusedId, setFocused, setDetails, setStage]);
+  }, [leads, focusedId, setFocused, setDetails]);
 
   useEffect(() => {
     if (!focusedId) return;

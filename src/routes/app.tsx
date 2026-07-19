@@ -6,13 +6,70 @@ import { WonDialog, DiscardDialog } from "@/components/app/StageDialogs";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MapIcon, LayoutGrid, BarChart3, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { isDemoMode, isRealMode, realConfigMissing } from "@/lib/env";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
 });
+
+function ConfigErrorScreen({ missing }: { missing: string[] }) {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold text-foreground">Integração não configurada</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          O modo real está ativo, mas variáveis obrigatórias estão ausentes. Configure-as e reinicie
+          a aplicação. Em desenvolvimento, use <code>VITE_DATA_MODE=demo</code>.
+        </p>
+        <ul className="mt-4 space-y-1 text-sm font-mono text-destructive">
+          {missing.map((v) => (
+            <li key={v}>{v}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Real mode: requires session; redirects to /login. Demo mode: open. */
+function AuthGate({ children }: { children: ReactNode }) {
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isRealMode && !auth.loading && !auth.isAuthenticated) {
+      navigate({ to: "/login" });
+    }
+  }, [auth.loading, auth.isAuthenticated, navigate]);
+
+  if (isRealMode) {
+    const missing = realConfigMissing();
+    if (missing.length > 0) return <ConfigErrorScreen missing={missing} />;
+    if (auth.loading) {
+      return (
+        <div className="flex min-h-dvh items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">Verificando sessão...</p>
+        </div>
+      );
+    }
+    if (!auth.isAuthenticated) return null;
+  }
+  return <>{children}</>;
+}
+
+function DemoModeBanner() {
+  if (!isDemoMode) return null;
+  return (
+    <div className="pointer-events-none fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-full border bg-surface/95 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur md:bottom-3">
+      Modo demonstração — dados fictícios
+    </div>
+  );
+}
 
 function MobileNav() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
@@ -74,16 +131,19 @@ function AppLayout() {
   }, []);
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
-      <AppSidebar />
-      <main className="flex-1 min-w-0 overflow-hidden pb-14 md:pb-0">
-        <Outlet />
-      </main>
-      <MobileNav />
-      <LeadDetailsDrawer />
-      <BulkMessageDialog open={bulkOpen} onOpenChange={setBulkOpen} />
-      <WonDialog />
-      <DiscardDialog />
-    </div>
+    <AuthGate>
+      <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+        <AppSidebar />
+        <main className="flex-1 min-w-0 overflow-hidden pb-14 md:pb-0">
+          <Outlet />
+        </main>
+        <MobileNav />
+        <LeadDetailsDrawer />
+        <BulkMessageDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+        <WonDialog />
+        <DiscardDialog />
+        <DemoModeBanner />
+      </div>
+    </AuthGate>
   );
 }

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
+import { Virtuoso } from "react-virtuoso";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Radar,
@@ -15,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUIStore, useLeadsStore, applyPresenceFilter } from "@/stores";
+import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import { SearchForm } from "./SearchForm";
 import { QuickFilters, SortSelect, AdvancedFilters } from "./Filters";
@@ -37,13 +39,18 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const setCollapsed = useUIStore((s) => s.setSidebarCollapsed);
 
-  const leads = useLeadsStore((s) => s.leads);
   const searching = useLeadsStore((s) => s.searching);
   const searchError = useLeadsStore((s) => s.searchError);
   const setSearchError = useLeadsStore((s) => s.setSearchError);
   const filters = useLeadsStore((s) => s.filters);
   const sort = useLeadsStore((s) => s.sort);
   const bulkMode = useLeadsStore((s) => s.bulkMode);
+  const selectedIds = useLeadsStore((s) => s.selectedIds);
+  const focusedId = useLeadsStore((s) => s.focusedId);
+
+  // CRM real — leads from TanStack Query (Phase 3)
+  const { data } = useLeadsList(filters, sort);
+  const leads = data?.items ?? [];
 
   const pathname = useRouterState({ select: (r) => r.location.pathname });
 
@@ -54,19 +61,27 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
 
   const summary = useMemo(() => {
     if (!leads.length) return null;
-    const noSite = leads.filter((l) => !l.hasWebsite).length;
-    const withSite = leads.length - noSite;
-    const enriched = leads.filter((l) => l.phone || l.whatsapp || l.email).length;
-    const wa = leads.filter((l) => l.whatsapp).length;
-    const emails = leads.filter((l) => l.email).length;
+    // Single-pass aggregation instead of 6 separate .filter() calls
+    let noSite = 0;
+    let enriched = 0;
+    let wa = 0;
+    let emails = 0;
+    let phones = 0;
+    for (const l of leads) {
+      if (!l.hasWebsite) noSite++;
+      if (l.whatsapp) wa++;
+      if (l.email) emails++;
+      if (l.phone) phones++;
+      if (l.phone || l.whatsapp || l.email) enriched++;
+    }
     return {
       noSite,
-      withSite,
+      withSite: leads.length - noSite,
       enriched,
       wa,
       emails,
+      phones,
       total: leads.length,
-      phones: leads.filter((l) => l.phone).length,
     };
   }, [leads]);
 
@@ -292,7 +307,24 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
             description="Ajuste os filtros ou faça uma nova busca."
           />
         ) : (
-          filtered.map((l) => <LeadCard key={l.id} lead={l} bulk={bulkMode} />)
+          <Virtuoso
+            useWindowScroll={false}
+            totalCount={filtered.length}
+            itemContent={(index) => {
+              const l = filtered[index];
+              return (
+                <div className="px-0.5 py-0.5">
+                  <LeadCard
+                    lead={l}
+                    bulk={bulkMode}
+                    isSelected={selectedIds.includes(l.id)}
+                    isFocused={focusedId === l.id}
+                  />
+                </div>
+              );
+            }}
+            style={{ height: "100%" }}
+          />
         )}
       </div>
     </aside>
