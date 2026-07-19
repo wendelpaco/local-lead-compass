@@ -1,7 +1,13 @@
 import { useLeadsStore, useMessageStore, useSettingsStore } from "@/stores";
 import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
 import { MessageCircle, Copy, X, ChevronLeft, ChevronRight, Check } from "lucide-react";
@@ -100,8 +106,11 @@ export function BulkMessageDialog({
 }) {
   const selected = useLeadsStore((s) => s.selectedIds);
   const { data } = useLeadsList({ quick: [] });
-  const allLeads = data?.items ?? [];
-  const leads = useMemo(() => allLeads.filter((l) => selected.includes(l.id)), [allLeads, selected]);
+  const allLeads = useMemo(() => data?.items ?? [], [data]);
+  const leads = useMemo(
+    () => allLeads.filter((l) => selected.includes(l.id)),
+    [allLeads, selected],
+  );
   const template = useMessageStore((s) => s.template);
   const senderName = useSettingsStore((s) => s.senderName);
   const userName = useSettingsStore((s) => s.userName);

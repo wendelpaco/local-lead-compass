@@ -32,8 +32,33 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": [
+        "warn",
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            "buttonVariants",
+            "badgeVariants",
+            "toggleVariants",
+            "sidebarMenuButtonVariants",
+            "navigationMenuTriggerStyle",
+            "FormMessage",
+            "formMessageVariants",
+          ],
+        },
+      ],
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
+    // shadcn/ui files export utility functions alongside components
+    files: [
+      "src/components/ui/**/*.tsx",
+      "src/components/app/KanbanBoard.tsx",
+      "src/components/app/AppSidebar.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
   eslintPluginPrettier,

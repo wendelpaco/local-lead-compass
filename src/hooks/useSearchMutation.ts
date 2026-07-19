@@ -111,9 +111,7 @@ export function useSearchMutation({ onSuccess, onError }: UseSearchMutationOptio
           percent: Math.round(percent),
           partialCount: status.importedCount || status.foundCount || 0,
         });
-      } while (
-        !["completed", "partial", "failed", "cancelled"].includes(status.status)
-      );
+      } while (!["completed", "partial", "failed", "cancelled"].includes(status.status));
 
       if (cancelRef.current) return;
 
@@ -125,7 +123,12 @@ export function useSearchMutation({ onSuccess, onError }: UseSearchMutationOptio
       }
 
       // Import all results
-      setProgress({ step: 0, stepLabel: "Finalizando...", percent: 95, partialCount: status.foundCount });
+      setProgress({
+        step: 0,
+        stepLabel: "Finalizando...",
+        percent: 95,
+        partialCount: status.foundCount,
+      });
       const importResult = await repo.importResults(searchId, [], true);
       if (cancelRef.current) return;
 
@@ -198,7 +201,7 @@ export function useSearchMutation({ onSuccess, onError }: UseSearchMutationOptio
         simulateSteps();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [demoMutation, realMutation],
   );
 

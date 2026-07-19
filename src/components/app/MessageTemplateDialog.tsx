@@ -52,7 +52,10 @@ export function MessageTemplateDialog() {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Modelo de mensagem do WhatsApp</DialogTitle>
-          <DialogDescription>Use {'{{'}empresa{'}}'}, {'{{'}categoria{'}}'}, {'{{'}cidade{'}}'} e outros campos para personalizar.</DialogDescription>
+          <DialogDescription>
+            Use {"{{"}empresa{"}}"}, {"{{"}categoria{"}}"}, {"{{"}cidade{"}}"} e outros campos para
+            personalizar.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div>

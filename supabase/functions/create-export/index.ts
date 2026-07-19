@@ -20,10 +20,27 @@ const InputSchema = z.object({
 });
 
 const EXPORTABLE_COLUMNS = new Set([
-  "company_name", "category", "address", "neighborhood", "city", "state",
-  "phone", "whatsapp", "email", "instagram", "website", "has_website",
-  "rating", "review_count", "score", "temperature", "stage",
-  "estimated_value", "closed_value", "created_at", "last_interaction_at",
+  "company_name",
+  "category",
+  "address",
+  "neighborhood",
+  "city",
+  "state",
+  "phone",
+  "whatsapp",
+  "email",
+  "instagram",
+  "website",
+  "has_website",
+  "rating",
+  "review_count",
+  "score",
+  "temperature",
+  "stage",
+  "estimated_value",
+  "closed_value",
+  "created_at",
+  "last_interaction_at",
 ]);
 
 // CSV formula injection guard: prefix dangerous leading chars.

@@ -4,7 +4,13 @@ import { useLeadsStore } from "@/stores";
 import { LeadDetailsDrawer } from "@/components/app/LeadDetailsDrawer";
 import { BulkMessageDialog } from "@/components/app/BulkBar";
 import { WonDialog, DiscardDialog } from "@/components/app/StageDialogs";
-import { Sheet, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MapIcon, LayoutGrid, BarChart3, Search } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -115,7 +121,9 @@ function MobileNav() {
         </SheetTrigger>
         <SheetContent side="left" className="w-full sm:max-w-md p-0">
           <SheetTitle className="sr-only">Busca e lista de leads</SheetTitle>
-          <SheetDescription className="sr-only">Painel de busca com filtros e lista de leads encontrados</SheetDescription>
+          <SheetDescription className="sr-only">
+            Painel de busca com filtros e lista de leads encontrados
+          </SheetDescription>
           <AppSidebar mobile />
         </SheetContent>
       </Sheet>

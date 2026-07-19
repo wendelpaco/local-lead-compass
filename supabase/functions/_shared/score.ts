@@ -41,7 +41,13 @@ export function calculateScore(input: ScoreInput): ScoreBreakdown {
   if (input.businessStatus === "OPERATIONAL")
     add("operational", "Em operação", 5, "Estabelecimento ativo");
 
-  const total = Math.max(0, Math.min(100, items.reduce((s, i) => s + i.points, 0)));
+  const total = Math.max(
+    0,
+    Math.min(
+      100,
+      items.reduce((s, i) => s + i.points, 0),
+    ),
+  );
   return { ruleVersion: SCORE_RULE_VERSION, total, items };
 }
 

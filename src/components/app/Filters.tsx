@@ -119,7 +119,7 @@ export function AdvancedFilters() {
 
   // CRM real — leads from TanStack Query (Phase 3)
   const { data } = useLeadsList(filters, sort);
-  const leads = data?.items ?? [];
+  const leads = useMemo(() => data?.items ?? [], [data]);
   const replaceFilters = useLeadsStore((s) => s.replaceFilters);
   const clearFilters = useLeadsStore((s) => s.clearFilters);
   const savedFilters = useLeadsStore((s) => s.savedFilters);

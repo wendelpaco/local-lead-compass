@@ -149,7 +149,12 @@ Deno.serve(async (req) => {
       logEvent({ requestId, operation: "create-search", status: "error", errorCode: err.code });
       return err.toResponse(requestId);
     }
-    logEvent({ requestId, operation: "create-search", status: "error", errorCode: "INTERNAL_ERROR" });
+    logEvent({
+      requestId,
+      operation: "create-search",
+      status: "error",
+      errorCode: "INTERNAL_ERROR",
+    });
     return new AppError("INTERNAL_ERROR", "Erro interno.").toResponse(requestId);
   }
 });

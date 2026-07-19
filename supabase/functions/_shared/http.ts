@@ -60,7 +60,13 @@ export class AppError extends Error {
     super(message);
   }
   toResponse(requestId: string): Response {
-    return apiError(requestId, this.code, this.message, STATUS_BY_CODE[this.code] ?? 500, this.details);
+    return apiError(
+      requestId,
+      this.code,
+      this.message,
+      STATUS_BY_CODE[this.code] ?? 500,
+      this.details,
+    );
   }
 }
 

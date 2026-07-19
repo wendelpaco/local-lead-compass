@@ -64,10 +64,13 @@ function KanbanPage() {
 
   // CRM real — leads now come from TanStack Query (Phase 3)
   const { data, isLoading } = useLeadsList(filters, sort);
-  const allLeads = data?.items ?? [];
+  const allLeads = useMemo(() => data?.items ?? [], [data]);
 
   const cities = useMemo(() => [...new Set(allLeads.map((l) => l.city))].sort(), [allLeads]);
-  const categories = useMemo(() => [...new Set(allLeads.map((l) => l.category))].sort(), [allLeads]);
+  const categories = useMemo(
+    () => [...new Set(allLeads.map((l) => l.category))].sort(),
+    [allLeads],
+  );
 
   const filtered = useMemo(() => {
     let base = sortLeads(applyFilters(allLeads, filters), sort);

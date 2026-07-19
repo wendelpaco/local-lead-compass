@@ -59,10 +59,7 @@ Deno.serve(async (req) => {
       .eq("id", searchId);
 
     // center comes back as GeoJSON via PostgREST
-    const [centerLng, centerLat] = (search.center?.coordinates ?? [null, null]) as [
-      number,
-      number,
-    ];
+    const [centerLng, centerLat] = (search.center?.coordinates ?? [null, null]) as [number, number];
     if (centerLat == null) throw new AppError("INVALID_LOCATION", "Centro da busca inválido.");
 
     const maxResults: number = search.max_results ?? 20;
@@ -203,7 +200,13 @@ Deno.serve(async (req) => {
         })
         .eq("id", searchId);
     }
-    logEvent({ requestId, searchId, operation: "execute-search", status: "error", errorCode: code });
+    logEvent({
+      requestId,
+      searchId,
+      operation: "execute-search",
+      status: "error",
+      errorCode: code,
+    });
     if (err instanceof AppError) return err.toResponse(requestId);
     return new AppError("INTERNAL_ERROR", "Erro interno.").toResponse(requestId);
   }

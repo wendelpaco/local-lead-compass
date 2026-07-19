@@ -109,8 +109,7 @@ Deno.serve(async (req) => {
           }
 
           const websiteReal = hasRealWebsite(place.website_uri as string | null);
-          const coords = (place.location as { coordinates?: [number, number] } | null)
-            ?.coordinates;
+          const coords = (place.location as { coordinates?: [number, number] } | null)?.coordinates;
           const breakdown = calculateScore({
             hasWebsite: websiteReal,
             hasValidPhone: phone?.isValid ?? false,

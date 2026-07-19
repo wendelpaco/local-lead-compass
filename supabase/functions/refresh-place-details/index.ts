@@ -56,7 +56,12 @@ Deno.serve(async (req) => {
       refreshed++;
     }
 
-    logEvent({ requestId, operation: "refresh-place-details", status: "ok", resultCount: refreshed });
+    logEvent({
+      requestId,
+      operation: "refresh-place-details",
+      status: "ok",
+      resultCount: refreshed,
+    });
     return json({ refreshed, skipped: parsed.data.placeIds.length - refreshed });
   } catch (err) {
     if (err instanceof AppError) return err.toResponse(requestId);

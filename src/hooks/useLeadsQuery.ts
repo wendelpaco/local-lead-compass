@@ -68,13 +68,8 @@ export function useAddNoteMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      leadId,
-      input,
-    }: {
-      leadId: string;
-      input: CreateLeadNoteInput;
-    }) => getLeadRepository().createNote(leadId, input),
+    mutationFn: ({ leadId, input }: { leadId: string; input: CreateLeadNoteInput }) =>
+      getLeadRepository().createNote(leadId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadKeys.all });
     },
@@ -85,13 +80,8 @@ export function useAddActivityMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      leadId,
-      input,
-    }: {
-      leadId: string;
-      input: CreateLeadActivityInput;
-    }) => getLeadRepository().createActivity(leadId, input),
+    mutationFn: ({ leadId, input }: { leadId: string; input: CreateLeadActivityInput }) =>
+      getLeadRepository().createActivity(leadId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadKeys.all });
     },

@@ -103,8 +103,8 @@ function MapaPage() {
   const setSearchError = useLeadsStore((s) => s.setSearchError);
 
   // CRM real — leads now come from TanStack Query (Phase 3)
-  const { data, isLoading } = useLeadsList(filters, sort);
-  const allLeads = data?.items ?? [];
+  const { data } = useLeadsList(filters, sort);
+  const allLeads = useMemo(() => data?.items ?? [], [data]);
 
   const filtered = useMemo(
     () => sortLeads(applyFilters(allLeads, filters), sort),

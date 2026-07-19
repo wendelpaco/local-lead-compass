@@ -8,7 +8,12 @@ import {
   SupabaseLeadRepository,
   SupabaseSearchRepository,
 } from "./supabase";
-import { DemoDashboardRepository, DemoLeadRepository, DemoSearchRepository, seedDemoLeads } from "./demo";
+import {
+  DemoDashboardRepository,
+  DemoLeadRepository,
+  DemoSearchRepository,
+  seedDemoLeads,
+} from "./demo";
 
 function assertRealConfig() {
   const missing = realConfigMissing();

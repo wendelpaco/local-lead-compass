@@ -59,8 +59,8 @@ export const LeadCard = memo(function LeadCard({
   // Fallback to store if props not provided (backward compat)
   const storeSelectedIds = useLeadsStore((s) => (isSelectedProp == null ? s.selectedIds : null));
   const storeFocusedId = useLeadsStore((s) => (isFocusedProp == null ? s.focusedId : null));
-  const isSelected = isSelectedProp ?? (storeSelectedIds?.includes(lead.id) ?? false);
-  const isFocused = isFocusedProp ?? (storeFocusedId === lead.id);
+  const isSelected = isSelectedProp ?? storeSelectedIds?.includes(lead.id) ?? false;
+  const isFocused = isFocusedProp ?? storeFocusedId === lead.id;
 
   const moveMutation = useMoveLeadMutation();
   const removeLeadMut = useRemoveLeadMutation();

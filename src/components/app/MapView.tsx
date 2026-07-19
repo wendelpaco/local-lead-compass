@@ -173,7 +173,9 @@ export function MapView({ leads }: { leads: Lead[] }) {
         const popupEl = m.getPopup()?.getElement();
         if (!popupEl) return;
         const handler = (e: Event) => {
-          const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-action][data-id]");
+          const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(
+            "[data-action][data-id]",
+          );
           if (!btn) return;
           e.preventDefault();
           const id = btn.dataset.id!;
@@ -203,7 +205,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
       markersRef.current.set(l.id, m);
     });
     setVisibleCount(leads.length);
-  }, [leads, focusedId, setFocused, setDetails]);
+  }, [leads, focusedId, setFocused, setDetails, moveMutation]);
 
   useEffect(() => {
     if (!focusedId) return;
