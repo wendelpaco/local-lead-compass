@@ -168,26 +168,36 @@ export function MapView({ leads }: { leads: Lead[] }) {
       );
       m.bindPopup(popupHtml(l));
       m.on("popupopen", () => {
-        setTimeout(() => {
-          document.querySelectorAll<HTMLButtonElement>("[data-action][data-id]").forEach((btn) => {
-            btn.onclick = () => {
-              const id = btn.dataset.id!;
-              const action = btn.dataset.action;
-              const lead = leads.find((x) => x.id === id);
-              if (!lead) return;
-              if (action === "details") setDetails(id);
-              if (action === "whatsapp") {
-                const num = (lead.whatsapp ?? lead.phone ?? "").replace(/\D/g, "");
-                if (num) window.open(`https://wa.me/${num}`, "_blank");
-                else toast.error("Sem WhatsApp/telefone");
-              }
-              if (action === "funnel") {
-                moveMutation.mutate({ id, input: { toStage: "qualified" } });
-                toast.success("Lead adicionado ao funil como Qualificado");
-              }
-            };
-          });
-        }, 50);
+        // Use event delegation on the popup container — more reliable than
+        // setTimeout + querySelectorAll which races with Leaflet's DOM updates.
+        const popupEl = m.getPopup()?.getElement();
+        if (!popupEl) return;
+        const handler = (e: Event) => {
+          const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-action][data-id]");
+          if (!btn) return;
+          e.preventDefault();
+          const id = btn.dataset.id!;
+          const action = btn.dataset.action;
+          const lead = leads.find((x) => x.id === id);
+          if (!lead) return;
+          if (action === "details") setDetails(id);
+          if (action === "whatsapp") {
+            const num = (lead.whatsapp ?? lead.phone ?? "").replace(/\D/g, "");
+            if (num) window.open(`https://wa.me/${num}`, "_blank");
+            else toast.error("Sem WhatsApp/telefone");
+          }
+          if (action === "funnel") {
+            moveMutation.mutate({ id, input: { toStage: "qualified" } });
+            toast.success("Lead adicionado ao funil como Qualificado");
+          }
+        };
+        popupEl.addEventListener("click", handler);
+        // Clean up when popup closes
+        const cleanup = () => {
+          popupEl.removeEventListener("click", handler);
+          m.off("popupclose", cleanup);
+        };
+        m.on("popupclose", cleanup);
       });
       cluster.addLayer(m);
       markersRef.current.set(l.id, m);
@@ -237,7 +247,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
       />
 
       {(searching || !mapReady) && !mapError && (
-        <div className="absolute inset-0 z-[500] grid place-items-center bg-background/60 backdrop-blur-sm">
+        <div className="absolute inset-0 z-20 grid place-items-center bg-background/60 backdrop-blur-sm">
           <div className="flex items-center gap-2 rounded-lg border bg-surface px-4 py-3 shadow-elevated text-sm">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             {searching ? "Buscando empresas..." : "Carregando o mapa..."}
@@ -246,7 +256,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
       )}
 
       {mapError && (
-        <div className="absolute inset-0 z-[500] grid place-items-center bg-background/80">
+        <div className="absolute inset-0 z-20 grid place-items-center bg-background/80">
           <div className="max-w-xs rounded-lg border bg-surface p-4 text-center shadow-elevated">
             <p className="text-sm font-medium">Falha ao carregar o mapa</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -266,7 +276,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
         </div>
       )}
 
-      <div className="absolute top-3 right-3 z-[400] flex flex-col gap-1.5">
+      <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
         <Button
           size="icon"
           variant="secondary"
@@ -306,7 +316,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
           <Moon className="h-4 w-4" />
         </Button>
       </div>
-      <div className="absolute bottom-3 left-3 z-[400] flex flex-wrap items-center gap-3 rounded-lg border bg-surface/95 px-3 py-2 shadow-elevated backdrop-blur">
+      <div className="absolute bottom-3 left-3 z-10 flex flex-wrap items-center gap-3 rounded-lg border bg-surface/95 px-3 py-2 shadow-elevated backdrop-blur">
         {legend.map((l) => (
           <div
             key={l.label}
@@ -317,7 +327,7 @@ export function MapView({ leads }: { leads: Lead[] }) {
           </div>
         ))}
       </div>
-      <div className="absolute top-3 left-3 z-[400] rounded-lg border bg-surface/95 px-3 py-1.5 text-xs font-medium shadow-elevated backdrop-blur">
+      <div className="absolute top-3 left-3 z-10 rounded-lg border bg-surface/95 px-3 py-1.5 text-xs font-medium shadow-elevated backdrop-blur">
         {visibleCount}{" "}
         <span className="text-muted-foreground">de {leads.length} leads visíveis</span>
       </div>

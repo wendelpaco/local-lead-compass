@@ -1,9 +1,10 @@
 import { createFileRoute, Outlet, Link, useRouterState } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app/AppSidebar";
+import { useLeadsStore } from "@/stores";
 import { LeadDetailsDrawer } from "@/components/app/LeadDetailsDrawer";
 import { BulkMessageDialog } from "@/components/app/BulkBar";
 import { WonDialog, DiscardDialog } from "@/components/app/StageDialogs";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MapIcon, LayoutGrid, BarChart3, Search } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -114,6 +115,7 @@ function MobileNav() {
         </SheetTrigger>
         <SheetContent side="left" className="w-full sm:max-w-md p-0">
           <SheetTitle className="sr-only">Busca e lista de leads</SheetTitle>
+          <SheetDescription className="sr-only">Painel de busca com filtros e lista de leads encontrados</SheetDescription>
           <AppSidebar mobile />
         </SheetContent>
       </Sheet>
@@ -124,6 +126,17 @@ function MobileNav() {
 function AppLayout() {
   useThemeSync();
   const [bulkOpen, setBulkOpen] = useState(false);
+
+  // Sync Zustand store → demo repo on first mount (page reload)
+  useEffect(() => {
+    import("@/repositories").then(({ seedDemoLeads }) => {
+      const state = useLeadsStore.getState();
+      if (state.leads.length > 0) {
+        seedDemoLeads(state.leads);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const h = () => setBulkOpen(true);
     window.addEventListener("open-bulk-messages", h);

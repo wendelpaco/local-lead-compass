@@ -20,6 +20,15 @@ import {
 import { isDemoMode } from "@/lib/env";
 import { seedDemoLeads } from "@/repositories";
 
+function seedRepo(leads: Lead[]) {
+  if (!isDemoMode) return;
+  try {
+    seedDemoLeads(leads);
+  } catch {
+    // best-effort sync
+  }
+}
+
 // SSR-safe storage: returns a no-op storage when window/localStorage is unavailable
 function safeStorage() {
   if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
@@ -173,13 +182,7 @@ export const useLeadsStore = create<LeadsState>()(
       setSearchError: (searchError) => set({ searchError }),
       setLeads: (leads, search) => {
         // Sync with demo repository so TanStack Query hooks see the same data
-        if (isDemoMode) {
-          try {
-            seedDemoLeads(leads);
-          } catch {
-            // best-effort sync; query hooks fall back to empty
-          }
-        }
+        seedRepo(leads);
         set((s) => ({
           leads,
           loaded: true,

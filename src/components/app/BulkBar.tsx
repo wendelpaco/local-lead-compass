@@ -1,7 +1,7 @@
 import { useLeadsStore, useMessageStore, useSettingsStore } from "@/stores";
 import { useLeadsList } from "@/hooks/useLeadsQuery";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
 import { MessageCircle, Copy, X, ChevronLeft, ChevronRight, Check } from "lucide-react";
@@ -141,6 +141,7 @@ export function BulkMessageDialog({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Preparar mensagens ({leads.length})</DialogTitle>
+          <DialogDescription>Revise e personalize cada mensagem antes de enviar.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-[220px_1fr] gap-4 min-h-[420px]">
           <div className="border-r pr-3 space-y-1 max-h-[420px] overflow-y-auto">

@@ -183,11 +183,12 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
         )}
       </header>
 
-      <div className="border-b p-3">
-        <SearchForm />
-      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="border-b p-3">
+          <SearchForm />
+        </div>
 
-      <nav className="border-b p-2" aria-label="Navegação principal">
+        <nav className="border-b p-2" aria-label="Navegação principal">
         <div className="grid grid-cols-3 gap-1">
           {tabs.map((t) => {
             const active = pathname === t.to;
@@ -290,7 +291,7 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
         onOpenPrepare={() => window.dispatchEvent(new CustomEvent("open-bulk-messages"))}
       />
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="p-2">
         {searching ? (
           <LeadListSkeleton />
         ) : searchError ? (
@@ -308,8 +309,8 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
           />
         ) : (
           <Virtuoso
-            useWindowScroll={false}
             totalCount={filtered.length}
+            useWindowScroll={false}
             itemContent={(index) => {
               const l = filtered[index];
               return (
@@ -323,10 +324,11 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
                 </div>
               );
             }}
-            style={{ height: "100%" }}
+            style={{ height: `${Math.max(filtered.length * 140, 200)}px` }}
           />
         )}
       </div>
+      </div>{/* fecha o scroll wrapper */}
     </aside>
   );
 }

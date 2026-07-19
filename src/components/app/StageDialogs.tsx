@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -130,6 +131,7 @@ export function WonDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Registrar negócio ganho — {lead?.companyName}</DialogTitle>
+          <DialogDescription>Preencha os dados do negócio fechado.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -210,6 +212,7 @@ export function DiscardDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Descartar lead — {lead?.companyName}</DialogTitle>
+          <DialogDescription>Informe o motivo do descarte.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

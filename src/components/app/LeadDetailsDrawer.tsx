@@ -7,7 +7,7 @@ import {
   useToggleNotePinMutation,
   useAddActivityMutation,
 } from "@/hooks/useLeadsQuery";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemperatureBadge, ScoreBadge } from "@/components/shared/Badges";
@@ -32,6 +32,7 @@ import {
   Search as SearchIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +51,12 @@ export function LeadDetailsDrawer() {
   const setDetails = useLeadsStore((s) => s.setDetails);
 
   // CRM real — lead data from TanStack Query (Phase 3)
-  const { data: lead } = useLeadDetail(detailsId);
+  const { data: queriedLead } = useLeadDetail(detailsId);
+  // Fallback: if query hasn't loaded yet, try the Zustand store directly
+  const storeLead = useLeadsStore((s) =>
+    detailsId ? s.leads.find((l) => l.id === detailsId) : undefined,
+  );
+  const lead = queriedLead ?? storeLead;
   const addNoteMut = useAddNoteMutation();
   const removeNoteMut = useRemoveNoteMutation();
   const updateNoteMut = useUpdateNoteMutation();
@@ -76,25 +82,20 @@ export function LeadDetailsDrawer() {
     priority: "medium",
   });
 
-  if (!lead) return null;
-  const breakdown = calculateScore(lead).breakdown;
-  const insights: { icon: string; text: string; level: "high" | "med" | "low" }[] = [];
-  if (!lead.hasWebsite)
-    insights.push({
-      icon: "🌐",
-      text: "Empresa sem site — alta oportunidade de abordagem",
-      level: "high",
-    });
-  if ((lead.rating ?? 0) >= 4.5)
-    insights.push({ icon: "⭐", text: "Excelentes avaliações", level: "med" });
-  if (lead.whatsapp)
-    insights.push({ icon: "💬", text: "WhatsApp encontrado — contato direto", level: "high" });
-  if (!lead.instagram)
-    insights.push({ icon: "📷", text: "Sem Instagram — presença social incompleta", level: "med" });
-  if (lead.temperature === "hot")
-    insights.push({ icon: "🔥", text: "Lead quente — priorize o contato", level: "high" });
+  // Keep Sheet mounted during fetch to avoid overlay flicker
+  const isLoading = detailsId != null && !lead;
+
+  const breakdown = lead ? calculateScore(lead).breakdown : [];
+  const insights: { icon: string; text: string; level: "high" | "med" | "low" }[] = lead ? [
+    ...(!lead.hasWebsite ? [{ icon: "🌐", text: "Empresa sem site — alta oportunidade de abordagem", level: "high" as const }] : []),
+    ...((lead.rating ?? 0) >= 4.5 ? [{ icon: "⭐", text: "Excelentes avaliações", level: "med" as const }] : []),
+    ...(lead.whatsapp ? [{ icon: "💬", text: "WhatsApp encontrado — contato direto", level: "high" as const }] : []),
+    ...(!lead.instagram ? [{ icon: "📷", text: "Sem Instagram — presença social incompleta", level: "med" as const }] : []),
+    ...(lead.temperature === "hot" ? [{ icon: "🔥", text: "Lead quente — priorize o contato", level: "high" as const }] : []),
+  ] : [];
 
   const openWhats = () => {
+    if (!lead) return;
     const num = digitsOnly(lead.whatsapp ?? lead.phone);
     if (!num) return toast.error("Sem WhatsApp/telefone");
     window.open(`https://wa.me/${num}`, "_blank");
@@ -103,14 +104,20 @@ export function LeadDetailsDrawer() {
   return (
     <Sheet open={!!detailsId} onOpenChange={(v) => !v && setDetails(null)}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : lead ? (
+          <>
         <div className="border-b p-5">
           <SheetHeader className="p-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <SheetTitle className="text-lg">{lead.companyName}</SheetTitle>
-                <p className="text-sm text-muted-foreground">
+                <SheetDescription className="text-sm text-muted-foreground">
                   {lead.category} • {lead.neighborhood ?? ""} • {lead.city}, {lead.state}
-                </p>
+                </SheetDescription>
               </div>
               <div className="flex items-center gap-2">
                 <TemperatureBadge temperature={lead.temperature} />
@@ -538,6 +545,8 @@ export function LeadDetailsDrawer() {
             </ol>
           </TabsContent>
         </Tabs>
+          </>
+        ) : null}
       </SheetContent>
     </Sheet>
   );

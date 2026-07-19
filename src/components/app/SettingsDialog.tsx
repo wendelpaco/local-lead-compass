@@ -2,6 +2,7 @@ import { useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -94,6 +95,7 @@ export function SettingsDialog() {
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurações</DialogTitle>
+          <DialogDescription>Ajuste preferências, modelo de mensagem e exportação de dados.</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="general">
           <TabsList className="flex-wrap">
