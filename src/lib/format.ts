@@ -1,13 +1,20 @@
 const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const numberFormatter = new Intl.NumberFormat("pt-BR");
-const decimalFormatter = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const percentFormatter = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
+const decimalFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const percentFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
 
 export const formatBRL = (v?: number | null) => (v == null ? "—" : brlFormatter.format(v));
 export const formatNumber = (v?: number | null) => (v == null ? "—" : numberFormatter.format(v));
 export const formatDecimal = (v?: number | null) => (v == null ? "—" : decimalFormatter.format(v));
 export const formatPercent = (v?: number | null) => (v == null ? "—" : percentFormatter.format(v));
-export const formatDistance = (km?: number | null) => (km == null ? "—" : km < 1 ? `${Math.round(km * 1000)} m` : `${decimalFormatter.format(km)} km`);
+export const formatDistance = (km?: number | null) =>
+  km == null ? "—" : km < 1 ? `${Math.round(km * 1000)} m` : `${decimalFormatter.format(km)} km`;
 
 export const formatDate = (iso?: string | null) => {
   if (!iso) return "—";

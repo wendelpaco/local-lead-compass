@@ -77,6 +77,50 @@ export const SEARCH_STEPS = [
   "Organizando os resultados",
 ];
 
+export const PERIOD_OPTIONS = [
+  { value: "today", label: "Hoje" },
+  { value: "7d", label: "7 dias" },
+  { value: "30d", label: "30 dias" },
+  { value: "90d", label: "90 dias" },
+  { value: "year", label: "Este ano" },
+  { value: "custom", label: "Personalizado" },
+] as const;
+
+export const HOME_SUGGESTIONS = [
+  {
+    label: "Clínicas sem site em Porto Alegre",
+    niche: "Clínica médica",
+    location: "Porto Alegre, Rio Grande do Sul",
+    lat: -30.0346,
+    lng: -51.2177,
+    presence: "no-website" as const,
+  },
+  {
+    label: "Barbearias no Rio de Janeiro",
+    niche: "Barbearia",
+    location: "Rio de Janeiro, Rio de Janeiro",
+    lat: -22.9068,
+    lng: -43.1729,
+    presence: "all" as const,
+  },
+  {
+    label: "Academias em São Paulo",
+    niche: "Academia",
+    location: "São Paulo, São Paulo",
+    lat: -23.5505,
+    lng: -46.6333,
+    presence: "all" as const,
+  },
+  {
+    label: "Escritórios de advocacia em Curitiba",
+    niche: "Escritório de advocacia",
+    location: "Curitiba, Paraná",
+    lat: -25.4284,
+    lng: -49.2733,
+    presence: "no-website" as const,
+  },
+];
+
 export const SORT_OPTIONS = [
   { value: "relevance", label: "Relevância" },
   { value: "score-desc", label: "Maior score" },

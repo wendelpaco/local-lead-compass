@@ -2,12 +2,20 @@ export type LeadStage = "new" | "qualified" | "contacted" | "won" | "discarded";
 export type LeadTemperature = "hot" | "warm" | "cold";
 export type LeadChannel = "phone" | "whatsapp" | "email" | "instagram" | "website";
 export type PresenceFilter = "no-website" | "with-website" | "all";
-export type ActivityType = "call" | "message" | "meeting" | "followup" | "proposal" | "visit" | "other";
+export type ActivityType =
+  | "call"
+  | "message"
+  | "meeting"
+  | "followup"
+  | "proposal"
+  | "visit"
+  | "other";
 
 export interface LeadNote {
   id: string;
   content: string;
   createdAt: string;
+  updatedAt?: string;
   pinned?: boolean;
 }
 
@@ -108,6 +116,8 @@ export interface LeadFilters {
   neighborhoods?: string[];
   valueMin?: number;
   valueMax?: number;
+  discoveredAfter?: string;
+  lastInteractionAfter?: string;
   onlyUncontacted?: boolean;
   onlyWithTask?: boolean;
 }
@@ -122,3 +132,46 @@ export interface SavedFilter {
   name: string;
   filters: LeadFilters;
 }
+
+export type SearchHistory = Search[];
+
+export type ExportFormat = "csv" | "excel";
+
+export type DiscardReason =
+  | "Sem interesse"
+  | "Contato inválido"
+  | "Empresa encerrada"
+  | "Já possui fornecedor"
+  | "Fora do perfil"
+  | "Sem resposta"
+  | "Duplicado"
+  | "Outro";
+
+export interface WonDeal {
+  leadId: string;
+  value: number;
+  service: string;
+  closedAt: string;
+  owner?: string;
+  note?: string;
+  nextOpportunity?: string;
+}
+
+export interface PipelineStage {
+  stage: LeadStage;
+  label: string;
+  count: number;
+  value: number;
+}
+
+export interface AnalyticsMetric {
+  label: string;
+  value: string;
+  delta?: number;
+  tooltip?: string;
+}
+
+export type CreateLeadNoteInput = Omit<LeadNote, "id" | "createdAt">;
+export type CreateLeadActivityInput = Omit<LeadActivity, "id">;
+
+export type DashboardPeriod = "today" | "7d" | "30d" | "90d" | "year" | "custom";

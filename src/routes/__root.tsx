@@ -79,7 +79,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Radar Local — Encontre, qualifique e converta negócios locais" },
-      { name: "description", content: "Plataforma de prospecção de leads locais: descubra empresas por nicho, priorize oportunidades e organize seu funil comercial." },
+      {
+        name: "description",
+        content:
+          "Plataforma de prospecção de leads locais: descubra empresas por nicho, priorize oportunidades e organize seu funil comercial.",
+      },
       { property: "og:title", content: "Radar Local" },
       { property: "og:description", content: "Encontre, qualifique e converta negócios locais." },
       { property: "og:type", content: "website" },

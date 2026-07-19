@@ -37,8 +37,24 @@ export function applyFilters(leads: Lead[], filters: LeadFilters): Lead[] {
     if (filters.stages?.length && !filters.stages.includes(l.stage)) return false;
     if (filters.categories?.length && !filters.categories.includes(l.category)) return false;
     if (filters.cities?.length && !filters.cities.includes(l.city)) return false;
+    if (
+      filters.neighborhoods?.length &&
+      (!l.neighborhood || !filters.neighborhoods.includes(l.neighborhood))
+    )
+      return false;
     if (filters.valueMin != null && (l.estimatedValue ?? 0) < filters.valueMin) return false;
     if (filters.valueMax != null && (l.estimatedValue ?? 0) > filters.valueMax) return false;
+    if (
+      filters.discoveredAfter &&
+      new Date(l.discoveredAt) < new Date(`${filters.discoveredAfter}T00:00:00`)
+    )
+      return false;
+    if (
+      filters.lastInteractionAfter &&
+      (!l.lastInteractionAt ||
+        new Date(l.lastInteractionAt) < new Date(`${filters.lastInteractionAfter}T00:00:00`))
+    )
+      return false;
     if (filters.onlyUncontacted && l.stage !== "new") return false;
     if (filters.onlyWithTask && !l.nextActivity) return false;
     return true;
@@ -48,16 +64,29 @@ export function applyFilters(leads: Lead[], filters: LeadFilters): Lead[] {
 export function sortLeads(leads: Lead[], sort: SortValue): Lead[] {
   const arr = [...leads];
   switch (sort) {
-    case "score-desc": return arr.sort((a, b) => b.score - a.score);
-    case "rating-desc": return arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-    case "reviews-desc": return arr.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
-    case "distance-asc": return arr.sort((a, b) => a.distanceKm - b.distanceKm);
-    case "recent": return arr.sort((a, b) => +new Date(b.discoveredAt) - +new Date(a.discoveredAt));
-    case "name-asc": return arr.sort((a, b) => a.companyName.localeCompare(b.companyName));
-    case "name-desc": return arr.sort((a, b) => b.companyName.localeCompare(a.companyName));
-    case "value-desc": return arr.sort((a, b) => (b.estimatedValue ?? 0) - (a.estimatedValue ?? 0));
+    case "score-desc":
+      return arr.sort((a, b) => b.score - a.score);
+    case "rating-desc":
+      return arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    case "reviews-desc":
+      return arr.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
+    case "distance-asc":
+      return arr.sort((a, b) => a.distanceKm - b.distanceKm);
+    case "recent":
+      return arr.sort((a, b) => +new Date(b.discoveredAt) - +new Date(a.discoveredAt));
+    case "name-asc":
+      return arr.sort((a, b) => a.companyName.localeCompare(b.companyName));
+    case "name-desc":
+      return arr.sort((a, b) => b.companyName.localeCompare(a.companyName));
+    case "value-desc":
+      return arr.sort((a, b) => (b.estimatedValue ?? 0) - (a.estimatedValue ?? 0));
     case "relevance":
     default:
-      return arr.sort((a, b) => (b.score + (b.temperature === "hot" ? 10 : 0)) - (a.score + (a.temperature === "hot" ? 10 : 0)));
+      return arr.sort(
+        (a, b) =>
+          b.score +
+          (b.temperature === "hot" ? 10 : 0) -
+          (a.score + (a.temperature === "hot" ? 10 : 0)),
+      );
   }
 }
