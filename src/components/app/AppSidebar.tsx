@@ -90,10 +90,10 @@ export function AppSidebar({ mobile }: { mobile?: boolean }) {
     {
       to: "/app/kanban",
       icon: LayoutGrid,
-      label: "Kanban",
+      label: "Pipeline",
       count: filtered.filter((l) => l.stage !== "discarded").length,
     },
-    { to: "/app/painel", icon: BarChart3, label: "Painel", count: undefined },
+    { to: "/app/painel", icon: BarChart3, label: "Análises", count: undefined },
   ];
 
   if (collapsed && !mobile) {
