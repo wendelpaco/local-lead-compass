@@ -83,8 +83,8 @@ function MobileNav() {
   const [searchOpen, setSearchOpen] = useState(false);
   const tabs = [
     { to: "/app/mapa", icon: MapIcon, label: "Mapa" },
-    { to: "/app/kanban", icon: LayoutGrid, label: "Kanban" },
-    { to: "/app/painel", icon: BarChart3, label: "Painel" },
+    { to: "/app/kanban", icon: LayoutGrid, label: "Pipeline" },
+    { to: "/app/painel", icon: BarChart3, label: "Análises" },
   ];
   return (
     <nav
